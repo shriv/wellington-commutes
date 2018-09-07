@@ -49,7 +49,7 @@ readCommuterFlows <- function(file_path){
 ## PROCESSING DATA ##
 #####################
 
-cleanIncomeData <- function(income_file_path){
+cleanIncomeData <- function(income_df){
     # Specific function to clean XLS --> csv converted Stats NZ  census data
     #
     # Args:
@@ -57,18 +57,17 @@ cleanIncomeData <- function(income_file_path){
     #
     # Returns:
     #  income_df: cleaned dataframe
-    
+
     income_vals <- income_df[,5:19] # for 2013
-    salary_levels <- colnames(income_vals)
     income_vals <- as.data.frame(sapply( income_vals, factorToNum ));
     income_vals$statistical_area <- income_df$rowname
-
+    
     return(income_vals)
 
 }
 
 
-calculateMeanIncome <- function(income_vals){
+calculateMeanIncome <- function(income_vals, df_flow_clean){
     # Calculate mean personal income for brackets in 2013 census data
     # This is currently hardcoded. The ideal wuld be to get the values
     # from the column names
@@ -82,7 +81,9 @@ calculateMeanIncome <- function(income_vals){
     # Generate dataframe of numeric income values
     income_numeric <- data.frame(income_mid = c(0, seq(2500, 40000, 5000),
                                                 seq(45000, 70000, 10000), 90000, 125000, 200000))
-    income_numeric$salary_levels <- salary_levels
+
+    salary_levels <- colnames(income_vals)
+    income_numeric$salary_levels <- salary_levels[1 : length(salary_levels) - 1]
 
     # Melt data by statistical area
     income_by_statistical_area <- melt(income_vals)
@@ -97,7 +98,7 @@ calculateMeanIncome <- function(income_vals){
 
     # Calculate mean income from bracket 
     mean_income_df <- income_by_statistical_area %>% 
-        filter(statistical_area %in% df_clean$to_name) %>% 
+        filter(statistical_area %in% df_flow_clean$to_name) %>% 
         group_by(statistical_area) %>% 
         summarise(total_calc_income = sum(value * income_mid)) %>% 
         inner_join(people) %>% 
